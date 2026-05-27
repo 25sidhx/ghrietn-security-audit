@@ -1,0 +1,59 @@
+# nginx Security Configuration Patch
+# Apply these fixes to /etc/nginx/nginx.conf or site config
+
+# 1. Security Headers (add to server block)
+server {
+    # ... existing config ...
+    
+    # Security Headers
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google.com/recaptcha/; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://ghrietn.cybervidya.net https://ifsc.razorpay.com;" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Permissions-Policy "geolocation=(), microphone=(), camera=()" always;
+    
+    # Hide server version
+    server_tokens off;
+}
+
+# 2. CORS Restriction (add to /api/ location block)
+location /api/ {
+    # Only allow requests from the official domain
+    add_header Access-Control-Allow-Origin "https://ghrietn.cybervidya.net" always;
+    add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS" always;
+    add_header Access-Control-Allow-Headers "Content-Type, Authorization" always;
+    add_header Access-Control-Allow-Credentials "true" always;
+    
+    # Handle preflight requests
+    if ($request_method = OPTIONS) {
+        return 204;
+    }
+}
+
+# 3. Rate Limiting (add to http block)
+http {
+    # Rate limiting zone for login endpoints
+    limit_req_zone $binary_remote_addr zone=login_limit:10m rate=5r/m;
+    
+    # ... existing config ...
+}
+
+# Apply rate limiting to login endpoint
+location /api/auth/login {
+    limit_req zone=login_limit burst=3 nodelay;
+    # ... existing config ...
+}
+
+# 4. Additional Hardening
+server {
+    # Remove internal IPs from any proxy_pass directives
+    # Change from: proxy_pass http://172.26.1.5:8080;
+    # Change to:   proxy_pass http://localhost:8080;
+    
+    # Add .well-known/security.txt
+    location /.well-known/security.txt {
+        alias /var/www/html/security.txt;
+        default_type text/plain;
+    }
+}

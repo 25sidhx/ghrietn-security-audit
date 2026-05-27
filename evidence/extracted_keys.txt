@@ -1,0 +1,54 @@
+# GHRIETN Security Audit - Evidence
+
+## Extracted Keys
+
+```
+cipherkey: NPdLWA5w7yFQhPeUuKmO/A==
+cipheriv:  bV5V6nK4phvQG9ZhkAjugQ==
+algorithm: AES-256-CBC
+source:    main-es5.*.js (frontend bundle)
+```
+
+## Missing Security Headers
+
+Response from `https://ghrietn.cybervidya.net/home`:
+
+```
+HTTP/1.1 200 OK
+Server: nginx/1.18.0 (Ubuntu)
+Content-Type: text/html
+Content-Length: 9933
+[NO SECURITY HEADERS PRESENT]
+```
+
+**Missing:**
+- Strict-Transport-Security
+- Content-Security-Policy
+- X-Frame-Options
+- X-Content-Type-Options
+- Referrer-Policy
+- Permissions-Policy
+
+## CORS Misconfiguration
+
+```bash
+$ curl -I -X OPTIONS https://ghrietn.cybervidya.net/api/auth/login \
+  -H "Origin: https://evil.com"
+
+HTTP/1.1 200 OK
+Access-Control-Allow-Origin: *
+Access-Control-Allow-Methods: POST
+Access-Control-Max-Age: 3600
+```
+
+## Internal IP Exposure
+
+Found in JS bundle: `172.26.1.5`
+
+## reCAPTCHA Site Key
+
+```
+siteKey: 6Lffr1MsAAAAACWVUQrKKlKY7xbcfsdN0skxGW
+```
+
+**Status:** Consider this key compromised - rotate immediately.
